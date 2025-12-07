@@ -12,35 +12,42 @@ inputs:
   token:
     description: 'Secrets Token to authorize bot account'
     required: true
+  langs:
+    description: 'Languages for README'
+    required: true
 
 runs:
       using: "composite"
       steps:
-        - name: Checkout code
+        - name: Checkout Code
           uses: actions/checkout@v3
           with:
             fetch-depth: 3
             token: ${{ inputs.token }}
 
-        - name: Set up Python
+        - name: Set Up Python
           uses: actions/setup-python@v3
           with:
-            python-version: '3.9'
+            python-version: '3.10'
 
-        - name: Install dependencies
+        - name: Install Dependencies
           shell: bash
           run: |
-            pip install googletrans==4.0.0-rc1
-            sudo apt-get update
-            sudo apt-get install -y translate-shell
-
+            if [ -f "$GITHUB_ACTION_PATH/requirements.txt" ]; then
+              pip install -r $GITHUB_ACTION_PATH/requirements.txt
+            else
+              echo "⚠️ No requirements.txt found in the Action repository."
+            fi
         - name: Translate README
           shell: bash
           working-directory: .
           run: |
-            bash $GITHUB_ACTION_PATH/translation.sh
+            export LANGS=${{ inputs.langs }}
+            export ZHIPUAI_API_KEY=${{ inputs.zhipuai }}
+            export OPENAI_API_KEY=${{ inputs.openai }}
+            python $GITHUB_ACTION_PATH/translation.py
 
-        - name: GIT Commit
+        - name: Git Commit
           shell: bash
           working-directory: .
           run: |
